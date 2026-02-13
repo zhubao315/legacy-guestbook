@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guestbook | 留言板</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .guestbook {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h2 { font-size: 1.5rem; margin-bottom: 10px; }
+        .form { padding: 30px; border-bottom: 1px solid #e0e0e0; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .form-group textarea { resize: vertical; min-height: 100px; }
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        .messages { padding: 30px; }
+        .message {
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .message-name { font-weight: 600; color: #333; }
+        .message-time { font-size: 0.85rem; color: #666; }
+        .message-content { color: #444; line-height: 1.6; }
+        .empty-state { text-align: center; padding: 40px; color: #666; }
+        @media (max-width: 600px) {
+            h1 { font-size: 2rem; }
+            .container { padding: 0 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>留言板 Guestbook</h1>
+        <div class="guestbook">
+            <div class="header">
+                <h2>留下你的想法和建议</h2>
+                <p>欢迎在这里分享你的观点和感受</p>
+            </div>
+            <div class="form">
+                <form id="guestbookForm">
+                    <div class="form-group">
+                        <label for="name">姓名 / Name</label>
+                        <input type="text" id="name" name="name" required maxlength="50" placeholder="请输入你的名字">
+                    </div>
+                    <div class="form-group">
+                        <label for="message">留言 / Message</label>
+                        <textarea id="message" name="message" required maxlength="500" placeholder="请输入你的留言..."></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">发布留言 Post</button>
+                </form>
+            </div>
+            <div class="messages" id="messagesContainer">
+                <div class="empty-state">
+                    <p>还没有留言，快来第一个留言吧！</p>
+                    <p>No messages yet, be the first to leave a message!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() { loadMessages(); });
+        document.getElementById('guestbookForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('name').value.trim();
+            const message = document.getElementById('message').value.trim();
+            const timestamp = new Date().toISOString();
+            const newMessage = { id: Date.now(), name: name, message: message, timestamp: timestamp };
+            saveMessage(newMessage); renderMessage(newMessage);
+            document.getElementById('name').value = ''; document.getElementById('message').value = '';
+            document.getElementById('name').focus();
+        });
+        function saveMessage(message) {
+            let messages = getMessages(); messages.unshift(message);
+            localStorage.setItem('guestbook_messages', JSON.stringify(messages));
+        }
+        function getMessages() {
+            const messages = localStorage.getItem('guestbook_messages');
+            return messages ? JSON.parse(messages) : [];
+        }
+        function loadMessages() {
+            const messages = getMessages(); const container = document.getElementById('messagesContainer');
+            if (messages.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>还没有留言，快来第一个留言吧！</p><p>No messages yet, be the first to leave a message!</p></div>';
+                return;
+            }
+            container.innerHTML = messages.map(msg => renderMessageHTML(msg)).join('');
+        }
+        function renderMessage(message) {
+            const container = document.getElementById('messagesContainer');
+            if (container.querySelector('.empty-state')) { container.innerHTML = ''; }
+            container.insertAdjacentHTML('afterbegin', renderMessageHTML(message));
+        }
+        function renderMessageHTML(message) {
+            const date = new Date(message.timestamp);
+            const formattedDate = date.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            return '<div class="message"><div class="message-header"><span class="message-name">'+escapeHtml(message.name)+'</span><span class="message-time">'+formattedDate+'</span></div><div class="message-content">'+escapeHtml(message.message)+'</div></div>';
+        }
+        function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+    </script>
+</body>
+</html>
